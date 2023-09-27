@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -eo pipefail
+set -o errexit
+set -o errtrace
+shopt -s inherit_errexit
+
+if [[ -f "./.git/hooks/pre-commit" ]]; then
+    sh ./.git/hooks/pre-commit
+fi
+
+# @description: generates the tf-doc incl. submodules if applicable. See https://github.com/terraform-docs/terraform-docs
+function tfdocu() {
+    if [ -f "./terraform-docs.yml" ]; then
+        TF_DOCS_CONF="./terraform-docs.yml"
+    else
+        TF_DOCS_CONF="$HOME/.config/terraform-docs.yml"
+    fi
+    if [ -n "$(ls -A *.tf 2>/dev/null)" ]; then
+        terraform-docs -c $TF_DOCS_CONF .
+    else
+        for dir in $(find . -maxdepth 1 -type d -not -path '*/.*' -not -path '.'); do
+            echo $dir
+            terraform-docs -c $TF_DOCS_CONF $dir
+        done
+    fi
+}
+
+if [ -n "`find . -name '*.tf'`" ]; then
+    tfdocu
+fi

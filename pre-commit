@@ -11,11 +11,11 @@ fi
 function tfdocu_do() {
     # terraform-docs will locate any available configuration file without needing to explicitly pass the --config flag.
     if [ -z "$TF_DOCS_CONF" ]; then
-        if terraform-docs $1 > "$1/README.md"; then
+        if terraform-docs $1 ; then
             git add "$1/README.md"
         fi
     else
-        if terraform-docs -c $TF_DOCS_CONF $1 > "$1/README.md"; then
+        if terraform-docs -c $TF_DOCS_CONF $1; then
             git add "$1/README.md"
         fi
     fi
@@ -29,7 +29,9 @@ function tfdocu() {
     done
 
     if [[ -n "$(ls -A *.tf 2>/dev/null)" ]]; then
-        tfdocu_do .
+        dir="."
+        echo "[Info] Running terraform-docs for '$dir'"
+        tfdocu_do "$dir"
     fi
 }
 

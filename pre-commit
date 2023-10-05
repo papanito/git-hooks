@@ -21,11 +21,10 @@ function tfdocu_do() {
     fi
 }
 
-
 # @description: iterates over all modules and triggers creation of tf docu
 function tfdocu() {
     for dir in $(find . -maxdepth 1 -type d -not -path '*/.*' -not -path '.'); do
-        echo $dir
+        echo "[Info] Running terraform-docs for '$dir'"
         tfdocu_do $dir
     done
 
@@ -34,7 +33,12 @@ function tfdocu() {
     fi
 }
 
-
 if [[ -n "$(ls -A *.tf 2>/dev/null)" || -n "$(find .  -maxdepth 2 -not -path '*/.*' -not -path '.' -type f -name '*.tf')" ]]; then
     tfdocu
+    # "skeletons" will not be checked
+    if [[ "$(pwd)" == *"skeleton"* ]]; then
+        echo "[Info] This looks like a 'skeleton', so plese manually run `terraform fmt`"
+    else
+        terraform fmt -recurisve
+    fi
 fi

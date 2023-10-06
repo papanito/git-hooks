@@ -46,7 +46,12 @@ function run_gitleaks() {
 }
 
 if [[ -n "$(ls -A *.tf 2>/dev/null)" || -n "$(find .  -maxdepth 2 -not -path '*/.*' -not -path '.' -type f -name '*.tf')" ]]; then
-    tfdocu
+    # we can disable docs creation
+    if [ -z "$TF_DOCS_DISABLE" ]; then
+        if which terraform-docs &>/dev/null; then
+            tfdocu
+        fi
+    fi
     # "skeletons" will not be checked
     if [[ "$(pwd)" == *"skeleton"* ]]; then
         echo "[Info] This looks like a 'skeleton', so plese manually run `terraform fmt`"

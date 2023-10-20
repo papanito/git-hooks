@@ -37,6 +37,10 @@ function tfdocu() {
 
 # @description: Check for secrets in current state and block commit, for secrets in commits only report them
 function run_gitleaks() {
+    ## skip setp if you add an empty file .skip_gitleaks
+    if [[ -f "./.skip_gitleaks" ]]; then
+        return
+    fi
     if which gitleaks &>/dev/null ; then
         if [[ -z "$GITLEAKS_BASELINE" ]]; then
             GITLEAKS_BASELINE="./.gitleaks-report.json"

@@ -42,14 +42,8 @@ function run_gitleaks() {
         return
     fi
     if which gitleaks &>/dev/null ; then
-        if [[ -z "$GITLEAKS_BASELINE" ]]; then
-            GITLEAKS_BASELINE="./.gitleaks-report.json"
-        fi
-        if [[ -f "$GITLEAKS_BASELINE" ]]; then
-            gitleaks detect $BASELINE --baseline-path "$GITLEAKS_BASELINE"
-        else
-            gitleaks detect -vls
-        fi
+        # The protect command is used to scan uncommitted changes in a git repo You can set the --staged flag to check for changes in commits that have been git added
+        gitleaks protect --staged
     fi
 }
 

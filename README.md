@@ -13,22 +13,24 @@ Typical benefits:
 - Works the same for every contributor
 - Easy to version and share hooks
 
-
 ## Get started
 
 If you already installed pre-commit just enabled it in the repo as follows
 
 ```shell
-PRELANG=tf && \
-curl -q "hhttps://gitlab.com/papanito/git-hooks/-/raw/main/config/$PRELANG/.pre-commit-config.yaml" \
+curl -q "hhttps://gitlab.com/papanito/git-hooks/-/raw/main/config/.pre-commit-config.yaml" \
   -o .pre-commit-config.yaml  && \
   pre-commit install && \
   pre-commit autoupdate
 ```
 
+If you want to use the `commitlint` hook, install the [`commit-msg`](https://pre-commit.com/#commit-msg) hook in your project repo:
+
+```shell
+pre-commit install --hook-type commit-msg
+```
 
 Otherwise follow the instructions below
-
 
 ### Pre-requisites
 
@@ -96,4 +98,35 @@ You can install `pre-commit` with the default package manager. However, probably
    pre-commit run --all-files
    ```
 
+## Hooks
 
+### get_shared_config
+
+This repo contains default config files for different lanuguages unde [config](./config/). The hook downloads the config files into the project repo. This allows for updating changes in a central place and the developer will always get latest config files, ones (s)he starts committing.
+
+The hook should detect automatically which project type and downloads the respective files.
+
+### commitlint
+
+- Requires a `commitlint` config file in the repo's root according to [committing](https://commitlint.js.org/reference/configuration.html#configuration).
+- Enable it by adding the following to your `.pre-commit-config.yaml`:
+
+  ```yaml
+  - repo: https://gitlab.com/papanito/git-hooks.git
+    rev: <latest tag>
+    hooks:
+        - id: commitlint
+          stages: [commit-msg]
+  ```
+
+- You can add your [shared configurations](https://commitlint.js.org/reference/configuration.html#shareable-configuration) as a
+dependency using the `additional_dependencies` parameter of the hooks
+  
+  ```yaml
+  - repo: https://gitlab.com/papanito/git-hooks.git
+    rev: <latest tag>
+    hooks:
+        - id: commitlint
+          stages: [commit-msg]
+          additional_dependencies: ['@commitlint/config-angular']
+  ```

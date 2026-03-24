@@ -7,3 +7,10 @@
   always_run: true
   types_or: [terraform, markdown, yaml, json]
   stages: ["pre-commit"]
+- id: commitlint
+  name: commitlint
+  description: Commitlint hook
+  language: node
+  entry: commitlint --edit
+  pass_filenames: false
+  always_run: true

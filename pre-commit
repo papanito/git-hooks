@@ -8,30 +8,26 @@ if [[ -f "./.git/hooks/pre-commit" ]]; then
     sh ./.git/hooks/pre-commit
 fi
 
+# @description: check if README has ben updated and the add it to the commit
+function addReadme() {
+    changedReadme=$(git status --porcelain | awk 'match($1, "M"){print $2}' | grep "$1/.*md" )
+    if [ ! -z $changedReadme ]; then
+        echo "[Info] Adding $changedReadme to commit"
+        git add $changedReadme
+    fi
+}
+
+# @description: generates the tf-doc incl. submodules if applicable
 function tfdocu_do() {
     # terraform-docs will locate any available configuration file without needing to explicitly pass the --config flag.
     if [ -z "$TF_DOCS_CONF" ]; then
         if terraform-docs $1 ; then
-            git add "$1/README.md"
+            addReadme $1
         fi
     else
         if terraform-docs -c $TF_DOCS_CONF $1; then
-            git add "$1/README.md"
+            addReadme $1
         fi
-    fi
-}
-
-# @description: iterates over all modules and triggers creation of tf docu
-function tfdocu() {
-    for dir in $(find . -maxdepth 1 -type d -not -path '*/.*' -not -path '.'); do
-        echo "[Info] Running terraform-docs for '$dir'"
-        tfdocu_do $dir
-    done
-
-    if [[ -n "$(ls -A *.tf 2>/dev/null)" ]]; then
-        dir="."
-        echo "[Info] Running terraform-docs for '$dir'"
-        tfdocu_do "$dir"
     fi
 }
 
@@ -47,17 +43,29 @@ function run_gitleaks() {
     fi
 }
 
-if [[ -n "$(ls -A *.tf 2>/dev/null)" || -n "$(find .  -maxdepth 2 -not -path '*/.*' -not -path '.' -type f -name '*.tf')" ]]; then
+stagedFiles=$(git diff --cached --name-only | awk '{print $0}')
+# run terraform stuff if applicable
+filepath=()
+for filename in $stagedFiles; do
+    if [ "${filename##*.}" == "tf" ]; then
+        filepath+=("$(dirname $filename)")
+    fi
+done
+
+for dir in $(echo "${filepath[@]}" | tr ' ' '\n' | sort -u ); do
     # we can disable docs creation
     if [ -z "$TF_DOCS_DISABLE" ]; then
-        tfdocu
+        echo "[Info] Running terraform-docs for '$dir'"
+        tfdocu_do $dir
     fi
     # "skeletons" will not be checked
     if [[ "$(pwd)" == *"skeleton"* ]]; then
-        echo "[Info] This looks like a 'skeleton', so plese manually run `terraform fmt`"
+        echo "[Info] This looks like a 'skeleton', so please manually run `terraform fmt`"
     else
+        echo "[Info] Running terraform fmt"
         terraform fmt -recursive
     fi
-fi
+done
 
+# always run gitleaks
 run_gitleaks

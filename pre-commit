@@ -10,7 +10,7 @@ fi
 
 # @description: check if README has ben updated and the add it to the commit
 function addReadme() {
-    changedReadme=$(git status --porcelain | awk 'match($1, "M"){print $2}' | grep "$1/.*md" )
+    changedReadme=$(git status --porcelain | awk 'match($1, "M"){ if ($2 ~ /.*.md/) print $2}')
     if [ ! -z $changedReadme ]; then
         echo "[Info] Adding $changedReadme to commit"
         git add $changedReadme
@@ -18,7 +18,7 @@ function addReadme() {
 }
 
 # @description: generates the tf-doc incl. submodules if applicable
-function tfdocu_do() {
+function tfdocu() {
     # terraform-docs will locate any available configuration file without needing to explicitly pass the --config flag.
     if [ -z "$TF_DOCS_CONF" ]; then
         if terraform-docs $1 ; then
@@ -56,7 +56,7 @@ for dir in $(echo "${filepath[@]}" | tr ' ' '\n' | sort -u ); do
     # we can disable docs creation
     if [ -z "$TF_DOCS_DISABLE" ]; then
         echo "[Info] Running terraform-docs for '$dir'"
-        tfdocu_do $dir
+        tfdocu $dir
     fi
     # "skeletons" will not be checked
     if [[ "$(pwd)" == *"skeleton"* ]]; then

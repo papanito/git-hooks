@@ -24,7 +24,10 @@ elif git ls-files '*package.json' | grep -q .; then
 elif git ls-files 'pom.xml' | grep -q .; then
   TYPE=java
 else
-  exit 0
+  # Structure: "PATH|OVERRIDE_BOOLEAN"
+  SOURCE_PATHS=(
+    "config/.commitlintrc.js|false"
+  )
 fi
 
 # ========= USER CONFIG =========

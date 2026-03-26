@@ -4,7 +4,7 @@ set -o errexit
 set -o errtrace
 shopt -s inherit_errexit
 
-HOOKS_PATH=$(git config get core.hooksPath)
+HOOKS_PATH=$(git config --get core.hooksPath)
 HOOKS_PATH="${HOOKS_PATH/#\~/$HOME}" # expand ~to $HOME so it works also with cygwin
 
 ## Run repo pre-commit hook first
@@ -12,124 +12,6 @@ if [[ -f "./.git/hooks/pre-commit" ]]; then
     sh ./.git/hooks/pre-commit
 fi
 
-# @description: generates the tf-doc incl. submodules if applicable
-function tfdocu_do() {
-
-    TFLINT_CONFIG_FILE="$HOOKS_PATH/config/.terraform-docs.yml"
-
-    # Use share config from the hooks folder
-    if [ -f "$TFLINT_CONFIG_FILE" ]; then
-        echo "[Info] Copy $TFLINT_CONFIG_FILE to users home directory"
-        # \ will run cp even an alias is defined
-        \cp -rf $TFLINT_CONFIG_FILE $HOME/.tfdocs.d/
-    fi  
-
-    # terraform-docs will locate any available configuration file without needing to explicitly pass the --config flag.
-    if [ -f "./.terraform-docs.yml" ]; then
-        TF_DOCS_CONF="./.terraform-docs.yml"
-    elif [ -f "$HOOKS_PATH/.terraform-docs.yml" ]; then
-        TF_DOCS_CONF="$HOOKS_PATH/.terraform-docs.yml"
-    elif [ -z "$TF_DOCS_CONF" ]; then
-        # Workaround for bug https://github.com/terraform-docs/terraform-docs/issues/713
-        TF_DOCS_CONF="$HOME/.tfdocs.d/.terraform-docs.yml"
-    fi
-
-    # commit updated README automatically
-    if terraform-docs -c $TF_DOCS_CONF $1; then
-        changedReadme=$(git status --porcelain | awk 'match($1, "M"){ if ($2 ~ /.*.md/) print $2}')
-        if [ ! -z $changedReadme ]; then
-            echo "[Info] Adding $changedReadme to commit"
-            git add $changedReadme
-        fi
-    fi
-}
-
-# @description: runs tflint on list of folders
-# You can change the behavior not only in CLI flags but also in config files. TFLint loads config files according to the following priority order:
-# 1. File passed by the --config option
-# 2. File set by the TFLINT_CONFIG_FILE environment variable
-# 3. Current directory (./.tflint.hcl)
-# 4. Home directory (~/.tflint.hcl)
-#
-# Also be aware of https://github.com/terraform-linters/tflint/blob/master/docs/user-guide/working-directory.md
-function tflint_do() {
-    if [[ -z "$1" ]]; then 
-        stagedDirs="."
-    else
-        stagedDirs=$1
-    fi
-
-    TFLINT_CONFIG_FILE="$HOOKS_PATH/config/.tflint.hcl"
-
-    # Use share config from the hooks folder
-    if [ -f "$TFLINT_CONFIG_FILE" ]; then
-        echo "[Info] Copy $TFLINT_CONFIG_FILE to users home directory"
-        # \ will run cp even an alias is defined
-        \cp -rf $TFLINT_CONFIG_FILE $HOME
-    fi  
-
-    for dir in $stagedDirs; do
-        echo "[Info] Running tflint for $dir"
-        tflint --chdir $dir
-    done
-}
-
-# @description: Check for secrets in current state and block commit, for secrets in commits only report them
-function run_gitleaks() {
-    ## skip if you add an empty file .skip_gitleaks
-    if [ -f ./.skip_gitleaks ]; then
-        return
-    fi
-    if which gitleaks &>/dev/null ; then
-        # The protect command is used to scan uncommitted changes in a git repo You can set the --staged flag to check for changes in commits that have been git added
-        gitleaks protect --staged
-    fi
-}
-
-echo "[Info] Running pre-commit hook"
-
-stagedFiles=$(git diff --cached --name-only | awk '{print $0}')
-stagedDirs=""
-if [[ -n "$stagedFiles" ]]; then
-    stagedDirs=$(dirname $stagedFiles | cut -d "/" -f1 | sort -u)
+if [ -f .pre-commit-config.yaml ]; then
+    pre-commit run
 fi
-
-echo "[Info] Directories with stages files: $stagedDirs"
-
-# @description: Run terraform specific function
-function do_terraform() {
-    stagedFiles=$1
-    stagedDirs=$2
-    if [[ $(find "." -mindepth 1 -maxdepth 2 -name '*.tf' -type f | wc -l) -gt 0 ]]; then
-        # run terraform stuff if applicable
-        echo "[Info] Run terraform stuff if applicable"
-        stagedDirsWithTfFiles=()
-        for filename in $stagedFiles; do
-            if [ "${filename##*.}" == "tf" ]; then
-                stagedDirsWithTfFiles+=("$(dirname $filename)")
-            fi
-        done
-
-        for dir in $(echo "${stagedDirsWithTfFiles[@]}" | tr ' ' '\n' | sort -u ); do
-            # we can disable docs creation
-            if [[ -z "$TF_DOCS_DISABLE" ]]; then
-                echo "[Info] Running terraform-docs for '$dir'"
-                tfdocu_do $dir
-            fi
-            # "skeletons" will not be checked
-            if [[ "$(pwd)" == *"skeleton"* ]]; then
-                echo "[Info] This looks like a 'skeleton', so please manually run `terraform fmt`"
-            else
-                echo "[Info] Running terraform fmt for '$dir'"
-                terraform fmt -recursive
-            fi
-        done
-
-        tflint_do $stagedDirs
-    fi
-}
-
-do_terraform $stagedFiles $stagedDirs
-# always run gitleaks
-run_gitleaks
-

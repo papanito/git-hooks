@@ -1,0 +1,9 @@
+- id: get_shared_config
+  name: Get shared config
+  description: Gets shared config and adds them to project
+  entry: ./pre_commit_hooks/get_shared_config.sh
+  language: script
+  pass_filenames: false
+  always_run: true
+  types_or: [terraform, markdown, yaml, json]
+  stages: ["pre-commit"]

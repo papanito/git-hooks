@@ -9,8 +9,7 @@ module.exports = {
     },
   },
   rules: {
-    // Sentence Case for the subject
-    // [Level, Applicability, Case]
+    // Sentence Case for the subject [Level, Applicability, Case]
     // 'sentence-case' ensures the first letter is capitalized, rest is lower
     'subject-case': [2, 'always', 'sentence-case'],
     'subject-empty': [2, 'never'],

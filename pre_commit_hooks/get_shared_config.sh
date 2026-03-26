@@ -115,9 +115,8 @@ for entry in "${SOURCE_PATHS[@]}"; do
       mkdir -p "$dest_dir_abs/$(dirname "$rel")"
       dest="$dest_dir_abs/$rel"
 
-      # Logic:
-      # 1. Check if it's a new file OR if content differs
-      # 2. IF it exists and differs, ONLY proceed if SHOULD_OVERRIDE is true
+      # Check if it's a new file OR if content differs
+      # IF it exists and differs, ONLY proceed if SHOULD_OVERRIDE is true
       if [[ ! -f "$dest" ]]; then
         echo "pre-commit: Creating new file ${dest#$REPO_ROOT/}"
         cp -f "$file" "$dest"

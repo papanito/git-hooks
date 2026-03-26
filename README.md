@@ -121,7 +121,7 @@ The hook should detect automatically which project type and downloads the respec
 
 - You can add your [shared configurations](https://commitlint.js.org/reference/configuration.html#shareable-configuration) as a
 dependency using the `additional_dependencies` parameter of the hooks
-  
+
   ```yaml
   - repo: https://gitlab.com/papanito/git-hooks.git
     rev: <latest tag>

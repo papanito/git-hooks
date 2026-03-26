@@ -9,11 +9,11 @@ module.exports = {
     },
   },
   rules: {
-    // Sentence Case for the subject
-    // [Level, Applicability, Case]
+    // Sentence Case for the subject [Level, Applicability, Case]
     // 'sentence-case' ensures the first letter is capitalized, rest is lower
     'subject-case': [2, 'always', 'sentence-case'],
     'subject-empty': [2, 'never'],
+
     // Block (Error) if the subject itself is longer than 72 chars
     // [Level 2 = Error, Applicability, Length]
     'subject-max-length': [2, 'always', 72],

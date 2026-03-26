@@ -12,10 +12,12 @@ if git ls-files '*.tf' | grep -q .; then
     echo "Detected 'tfm' in origin URL: $ORIGIN_URL"
     CONFIG_SUB_DIR="tfm"
   fi
+  # Structure: "PATH|OVERRIDE_BOOLEAN"
   SOURCE_PATHS=(
-    "config/$TYPE/.tflint.hcl"
-    "config/$TYPE/.gitignore"
-    "config/$TYPE/$CONFIG_SUB_DIR/.terraform-docs.yml"
+    "config/$TYPE/.tflint.hcl|true"
+    "config/$TYPE/.gitignore|true"
+    "config/$TYPE/$CONFIG_SUB_DIR/.terraform-docs.yml|true"
+    "config/.commitlintrc.js|false"
   )
 elif git ls-files '*package.json' | grep -q .; then
   TYPE=nodejs
@@ -100,7 +102,9 @@ CHANGES=0
 
 # Simple per-file copy. If you pass directories in SOURCE_PATHS,
 # either expand them here or use a directory-aware branch as in my earlier message.
-for src in "${SOURCE_PATHS[@]}"; do
+for entry in "${SOURCE_PATHS[@]}"; do
+  # Split the entry into path and the override flag
+  IFS='|' read -r src SHOULD_OVERRIDE <<<"$entry"
   SRC_ABS="$SPARSE_DIR/$src"
 
   if [[ -d "$SRC_ABS" ]]; then
@@ -110,13 +114,24 @@ for src in "${SOURCE_PATHS[@]}"; do
       dest_dir_abs="$REPO_ROOT/${DEST_DIR}"
       mkdir -p "$dest_dir_abs/$(dirname "$rel")"
       dest="$dest_dir_abs/$rel"
-      if [[ ! -f "$dest" ]] || ! cmp -s "$file" "$dest"; then
-        echo "pre-commit: Updating ${dest#$REPO_ROOT/}"
+
+      # Logic:
+      # 1. Check if it's a new file OR if content differs
+      # 2. IF it exists and differs, ONLY proceed if SHOULD_OVERRIDE is true
+      if [[ ! -f "$dest" ]]; then
+        echo "pre-commit: Creating new file ${dest#$REPO_ROOT/}"
         cp -f "$file" "$dest"
         git -C "$REPO_ROOT" add "$dest"
         CHANGES=1
-      else
-        echo "pre-commit: No change for ${dest#$REPO_ROOT/}"
+      elif ! cmp -s "$file" "$dest"; then
+        if [[ "$SHOULD_OVERRIDE" == "true" ]]; then
+          echo "pre-commit: Overriding ${dest#$REPO_ROOT/}"
+          cp -f "$file" "$dest"
+          git -C "$REPO_ROOT" add "$dest"
+          CHANGES=1
+        else
+          echo "pre-commit: Skipping override for ${dest#$REPO_ROOT/} (Override disabled)"
+        fi
       fi
     done < <(find "$SRC_ABS" -type f -print0)
     continue

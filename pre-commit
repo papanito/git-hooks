@@ -8,23 +8,34 @@ if [[ -f "./.git/hooks/pre-commit" ]]; then
     sh ./.git/hooks/pre-commit
 fi
 
-# @description: generates the tf-doc incl. submodules if applicable. See https://github.com/terraform-docs/terraform-docs
-function tfdocu() {
-    if [ -f "./terraform-docs.yml" ]; then
-        TF_DOCS_CONF="./terraform-docs.yml"
+# @description: generates the tf-doc incl. submodules if applicable
+function tfdocu_do() {
+    # terraform-docs will locate any available configuration file without needing to explicitly pass the --config flag.
+    if [ -z "$TF_DOCS_CONF" ]; then
+        if terraform-docs $1; then
+            git add "$1/README.md"
+        fi
     else
-        TF_DOCS_CONF="$HOME/.config/terraform-docs.yml"
-    fi
-    if [ -n "$(ls -A *.tf 2>/dev/null)" ]; then
-        terraform-docs -c $TF_DOCS_CONF .
-    else
-        for dir in $(find . -maxdepth 1 -type d -not -path '*/.*' -not -path '.'); do
-            echo $dir
-            terraform-docs -c $TF_DOCS_CONF $dir
-        done
+        if terraform-docs -c $TF_DOCS_CONF $1; then
+            git add "$1/README.md"
+        fi
     fi
 }
 
-if [ -n "`find . -name '*.tf'`" ]; then
+
+# @description: iterates over all modules and triggers creation of tf docu
+function tfdocu() {
+    for dir in $(find . -maxdepth 1 -type d -not -path '*/.*' -not -path '.'); do
+        echo $dir
+        tfdocu_do $dir
+    done
+
+    if [[ -n "$(ls -A *.tf 2>/dev/null)" ]]; then
+        tfdocu_do .
+    fi
+}
+
+
+if [[ -n "$(ls -A *.tf 2>/dev/null)" || -n "$(find .  -maxdepth 2 -not -path '*/.*' -not -path '.' -type f -name '*.tf')" ]]; then
     tfdocu
 fi

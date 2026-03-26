@@ -145,19 +145,6 @@ for entry in "${SOURCE_PATHS[@]}"; do
     exit 1
   fi
 
-  base_name="$(basename "$src")"
-  dest_dir_abs="$REPO_ROOT/${DEST_DIR}"
-  mkdir -p "$dest_dir_abs"
-  dest="$dest_dir_abs/$base_name"
-
-  if [[ ! -f "$dest" ]] || ! cmp -s "$SRC_ABS" "$dest"; then
-    echo "pre-commit: Updating ${dest#$REPO_ROOT/}"
-    cp -f "$SRC_ABS" "$dest"
-    git -C "$REPO_ROOT" add "$dest"
-    CHANGES=1
-  else
-    echo "pre-commit: No change for ${dest#$REPO_ROOT/}"
-  fi
 done
 
 if [[ "$CHANGES" -eq 1 && "${BLOCK_ON_UPDATE}" == "true" ]]; then

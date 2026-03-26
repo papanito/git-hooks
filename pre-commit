@@ -37,12 +37,16 @@ function tfdocu() {
 
 # @description: Check for secrets in current state and block commit, for secrets in commits only report them
 function run_gitleaks() {
-    GITLEAKS_FILE_TEMP="gitleaks.tmp"
-    which gitleaks &>/dev/null && \
-        echo "------ new secrets ------" >> $GITLEAKS_FILE_TEMP && \
-        gitleaks detect -vls --no-git > $GITLEAKS_FILE_TEMP && \
-        echo "------ secrets in commits ------" >> $GITLEAKS_FILE_TEMP && \
-        gitleaks detect -vls --exit-code 0 >> $GITLEAKS_FILE_TEMP
+    if which gitleaks &>/dev/null ; then
+        if [[ -z "$GITLEAKS_BASELINE" ]]; then
+            GITLEAKS_BASELINE="./.gitleaks-report.json"
+        fi
+        if [[ -f "$GITLEAKS_BASELINE" ]]; then
+            gitleaks detect $BASELINE --baseline-path "$GITLEAKS_BASELINE"
+        else
+            gitleaks detect -vls
+        fi
+    fi
 }
 
 if [[ -n "$(ls -A *.tf 2>/dev/null)" || -n "$(find .  -maxdepth 2 -not -path '*/.*' -not -path '.' -type f -name '*.tf')" ]]; then

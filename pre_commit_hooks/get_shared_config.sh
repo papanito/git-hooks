@@ -16,7 +16,6 @@ if git ls-files '*.tf' | grep -q .; then
     "config/$TYPE/.tflint.hcl"
     "config/$TYPE/.gitignore"
     "config/$TYPE/$CONFIG_SUB_DIR/.terraform-docs.yml"
-    "config/$TYPE/$CONFIG_SUB_DIR/PRCHECKLIST"
   )
 elif git ls-files '*package.json' | grep -q .; then
   TYPE=nodejs

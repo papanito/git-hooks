@@ -8,15 +8,14 @@ if [[ -f "./.git/hooks/pre-commit" ]]; then
     sh ./.git/hooks/pre-commit
 fi
 
-# @description: generates the tf-doc incl. submodules if applicable
 function tfdocu_do() {
     # terraform-docs will locate any available configuration file without needing to explicitly pass the --config flag.
     if [ -z "$TF_DOCS_CONF" ]; then
-        if terraform-docs $1; then
+        if terraform-docs $1 > "$1/README.md"; then
             git add "$1/README.md"
         fi
     else
-        if terraform-docs -c $TF_DOCS_CONF $1; then
+        if terraform-docs -c $TF_DOCS_CONF $1 > "$1/README.md"; then
             git add "$1/README.md"
         fi
     fi

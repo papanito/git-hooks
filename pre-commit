@@ -39,6 +39,6 @@ if [[ -n "$(ls -A *.tf 2>/dev/null)" || -n "$(find .  -maxdepth 2 -not -path '*/
     if [[ "$(pwd)" == *"skeleton"* ]]; then
         echo "[Info] This looks like a 'skeleton', so plese manually run `terraform fmt`"
     else
-        terraform fmt -recurisve
+        terraform fmt -recursive
     fi
 fi

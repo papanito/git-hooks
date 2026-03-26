@@ -10,7 +10,7 @@
 - id: commitlint
   name: commitlint
   description: Commitlint hook
-  language: node
+  language: system
   entry: commitlint --edit
   pass_filenames: false
   always_run: true

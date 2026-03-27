@@ -37,8 +37,6 @@ SOURCE_REF="main"
 # Sparse checkout: fetch these directories (cone mode)
 CHECKOUT_DIRS=("config") # pulls the entire config tree with subdirs
 
-# Destination directory relative to this repo root ("" = project root)
-DEST_DIR="" # e.g., "config"
 # If true, block the commit when files were updated (forces re-run)
 BLOCK_ON_UPDATE=true
 # ========= END USER CONFIG =====
@@ -110,34 +108,34 @@ for entry in "${SOURCE_PATHS[@]}"; do
   IFS='|' read -r src SHOULD_OVERRIDE <<<"$entry"
   SRC_ABS="$SPARSE_DIR/$src"
 
-  if [[ -d "$SRC_ABS" ]]; then
-    # Optional directory handling: preserve structure under $src
-    while IFS= read -r -d '' file; do
-      rel="${file#"$SPARSE_DIR/$src/"}"
-      dest_dir_abs="$REPO_ROOT/${DEST_DIR}"
-      mkdir -p "$dest_dir_abs/$(dirname "$rel")"
-      dest="$dest_dir_abs/$rel"
+  echo "pre-commit: Checking ${src}"
+  # Flattened directory handling: all files go directly to $DEST_DIR
+  while IFS= read -r -d '' file; do
+    echo "pre-commit: Checking ${src}"
+    # Get just the filename, ignoring the source folder structure
+    filename=$(basename "$file")
 
-      # Check if it's a new file OR if content differs
-      # IF it exists and differs, ONLY proceed if SHOULD_OVERRIDE is true
-      if [[ ! -f "$dest" ]]; then
-        echo "pre-commit: Creating new file ${dest#$REPO_ROOT/}"
+    dest="$REPO_ROOT/$filename"
+    echo "pre-commit: Dest is ${dest}"
+
+    # Logic remains the same: create if missing, or override if allowed
+    if [[ ! -f "$dest" ]]; then
+      echo "pre-commit: Creating new file ${dest#$REPO_ROOT/}"
+      cp -f "$file" "$dest"
+      git -C "$REPO_ROOT" add "$dest"
+      CHANGES=1
+    elif ! cmp -s "$file" "$dest"; then
+      if [[ "$SHOULD_OVERRIDE" == "true" ]]; then
+        echo "pre-commit: Overriding ${dest#$REPO_ROOT/}"
         cp -f "$file" "$dest"
         git -C "$REPO_ROOT" add "$dest"
         CHANGES=1
-      elif ! cmp -s "$file" "$dest"; then
-        if [[ "$SHOULD_OVERRIDE" == "true" ]]; then
-          echo "pre-commit: Overriding ${dest#$REPO_ROOT/}"
-          cp -f "$file" "$dest"
-          git -C "$REPO_ROOT" add "$dest"
-          CHANGES=1
-        else
-          echo "pre-commit: Skipping override for ${dest#$REPO_ROOT/} (Override disabled)"
-        fi
+      else
+        echo "pre-commit: Skipping override for ${dest#$REPO_ROOT/} (Override disabled)"
       fi
-    done < <(find "$SRC_ABS" -type f -print0)
-    continue
-  fi
+    fi
+  done < <(find "$SRC_ABS" -type f -print0)
+  continue
 
   # File path case
   if [[ ! -f "$SRC_ABS" ]]; then

@@ -23,7 +23,8 @@ module.exports = {
     'header-max-length': [1, 'always', 50],
     // Disable the global 'scope-empty' rule so we can handle it manually
     'scope-empty': [0],
-    'scope-enum': [2, 'always', 'api', [
+    'scope-enum': [2, 'always', [
+      'api',
       'infra',
       'ui',
       'security']],

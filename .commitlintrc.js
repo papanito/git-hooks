@@ -24,7 +24,7 @@ module.exports = {
     'scope-empty': [0],
     'scope-enum': [2, 'always', ['pre-commit', 'commit-msg']],
 
-    'type-enum': [2, 'always', ['feat', 'fix', 'chore', 'docs', 'ci', 'refactor']],
+    'type-enum': [2, 'always', ['feat', 'fix', 'chore', 'docs', 'ci', 'refactor', 'config']],
     // Load the custom rule from the plugin below
     'mandatory-scope': [2, 'always'],
   },
